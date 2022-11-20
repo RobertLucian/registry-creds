@@ -30,8 +30,8 @@ build: main.go
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o $(BIN) --ldflags '-w' $<
 
 .PHONY: container
-container: build
-	docker build -t $(PREFIX)/$(BIN):$(TAG) \
+container:
+	docker build --platform linux/amd64 -t $(PREFIX)/$(BIN):$(TAG) \
 		$(HTTP_PROXY_BUILD_ARG) \
 		$(HTTPS_PROXY_BUILD_ARG) .
 

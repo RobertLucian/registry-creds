@@ -9,18 +9,19 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/RobertLucian/registry-creds/k8sutil"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/upmc-enterprises/registry-creds/k8sutil"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
+	v1 "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	coreType "k8s.io/client-go/kubernetes/typed/core/v1"
 	v1fake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
-	"k8s.io/client-go/pkg/api"
-	v1 "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/watch"
 )
 
 func init() {
@@ -64,20 +65,8 @@ type fakeNamespaces struct {
 	store map[string]v1.Namespace
 }
 
-func (f *fakeKubeClient) Core() coreType.CoreV1Interface {
+func (f *fakeKubeClient) CoreV1() coreType.CoreV1Interface {
 	return &v1fake.FakeCoreV1{}
-}
-
-func (f *fakeKubeClient) Secrets(namespace string) coreType.SecretInterface {
-	return f.secrets[namespace]
-}
-
-func (f *fakeKubeClient) Namespaces() coreType.NamespaceInterface {
-	return f.namespaces
-}
-
-func (f *fakeKubeClient) ServiceAccounts(namespace string) coreType.ServiceAccountInterface {
-	return f.serviceaccounts[namespace]
 }
 
 func (f *fakeSecrets) Create(secret *v1.Secret) (*v1.Secret, error) {
@@ -112,13 +101,13 @@ func (f *fakeSecrets) Get(name string) (*v1.Secret, error) {
 	return secret, nil
 }
 
-func (f *fakeSecrets) Delete(name string, options *v1.DeleteOptions) error { return nil }
-func (f *fakeSecrets) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (f *fakeSecrets) Delete(name string, options *meta.DeleteOptions) error { return nil }
+func (f *fakeSecrets) DeleteCollection(options *meta.DeleteOptions, listOptions meta.ListOptions) error {
 	return nil
 }
-func (f *fakeSecrets) List(opts v1.ListOptions) (*v1.SecretList, error)   { return nil, nil }
-func (f *fakeSecrets) Watch(opts v1.ListOptions) (watch.Interface, error) { return nil, nil }
-func (f *fakeSecrets) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1.Secret, err error) {
+func (f *fakeSecrets) List(opts meta.ListOptions) (*v1.SecretList, error)   { return nil, nil }
+func (f *fakeSecrets) Watch(opts meta.ListOptions) (watch.Interface, error) { return nil, nil }
+func (f *fakeSecrets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Secret, err error) {
 	return nil, nil
 }
 
@@ -143,15 +132,15 @@ func (f *fakeServiceAccounts) Update(serviceAccount *v1.ServiceAccount) (*v1.Ser
 	return serviceAccount, nil
 }
 
-func (f *fakeServiceAccounts) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (f *fakeServiceAccounts) DeleteCollection(options *meta.DeleteOptions, listOptions meta.ListOptions) error {
 	return nil
 }
 
-func (f *fakeServiceAccounts) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1.ServiceAccount, err error) {
+func (f *fakeServiceAccounts) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.ServiceAccount, err error) {
 	return nil, nil
 }
 
-func (f *fakeServiceAccounts) Delete(name string, options *v1.DeleteOptions) error {
+func (f *fakeServiceAccounts) Delete(name string, options *meta.DeleteOptions) error {
 	_, ok := f.store[name]
 
 	if !ok {
@@ -165,12 +154,12 @@ func (f *fakeServiceAccounts) Delete(name string, options *v1.DeleteOptions) err
 func (f *fakeServiceAccounts) Create(serviceAccount *v1.ServiceAccount) (*v1.ServiceAccount, error) {
 	return nil, nil
 }
-func (f *fakeServiceAccounts) List(opts v1.ListOptions) (*v1.ServiceAccountList, error) {
+func (f *fakeServiceAccounts) List(opts meta.ListOptions) (*v1.ServiceAccountList, error) {
 	return nil, nil
 }
-func (f *fakeServiceAccounts) Watch(opts v1.ListOptions) (watch.Interface, error) { return nil, nil }
+func (f *fakeServiceAccounts) Watch(opts meta.ListOptions) (watch.Interface, error) { return nil, nil }
 
-func (f *fakeNamespaces) List(opts v1.ListOptions) (*v1.NamespaceList, error) {
+func (f *fakeNamespaces) List(opts meta.ListOptions) (*v1.NamespaceList, error) {
 	namespaces := make([]v1.Namespace, 0)
 
 	for _, v := range f.store {
@@ -180,17 +169,17 @@ func (f *fakeNamespaces) List(opts v1.ListOptions) (*v1.NamespaceList, error) {
 	return &v1.NamespaceList{Items: namespaces}, nil
 }
 
-func (f *fakeNamespaces) Create(item *v1.Namespace) (*v1.Namespace, error)    { return nil, nil }
-func (f *fakeNamespaces) Get(name string) (result *v1.Namespace, err error)   { return nil, nil }
-func (f *fakeNamespaces) UpdateStatus(*v1.Namespace) (*v1.Namespace, error)   { return nil, nil }
-func (f *fakeNamespaces) Delete(name string, options *v1.DeleteOptions) error { return nil }
-func (f *fakeNamespaces) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (f *fakeNamespaces) Create(item *v1.Namespace) (*v1.Namespace, error)      { return nil, nil }
+func (f *fakeNamespaces) Get(name string) (result *v1.Namespace, err error)     { return nil, nil }
+func (f *fakeNamespaces) UpdateStatus(*v1.Namespace) (*v1.Namespace, error)     { return nil, nil }
+func (f *fakeNamespaces) Delete(name string, options *meta.DeleteOptions) error { return nil }
+func (f *fakeNamespaces) DeleteCollection(options *meta.DeleteOptions, listOptions meta.ListOptions) error {
 	return nil
 }
-func (f *fakeNamespaces) Update(item *v1.Namespace) (*v1.Namespace, error)   { return nil, nil }
-func (f *fakeNamespaces) Watch(opts v1.ListOptions) (watch.Interface, error) { return nil, nil }
-func (f *fakeNamespaces) Finalize(item *v1.Namespace) (*v1.Namespace, error) { return nil, nil }
-func (f *fakeNamespaces) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1.Namespace, err error) {
+func (f *fakeNamespaces) Update(item *v1.Namespace) (*v1.Namespace, error)     { return nil, nil }
+func (f *fakeNamespaces) Watch(opts meta.ListOptions) (watch.Interface, error) { return nil, nil }
+func (f *fakeNamespaces) Finalize(item *v1.Namespace) (*v1.Namespace, error)   { return nil, nil }
+func (f *fakeNamespaces) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Namespace, err error) {
 	return nil, nil
 }
 func (f *fakeNamespaces) Status(item *v1.Namespace) (*v1.Namespace, error) { return nil, nil }
@@ -298,17 +287,17 @@ func newFakeKubeClient() k8sutil.KubeInterface {
 		},
 		namespaces: &fakeNamespaces{store: map[string]v1.Namespace{
 			"namespace1": {
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name: "namespace1",
 				},
 			},
 			"namespace2": {
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name: "namespace2",
 				},
 			},
 			"kube-system": {
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name: "kube-system",
 				},
 			},
@@ -317,7 +306,7 @@ func newFakeKubeClient() k8sutil.KubeInterface {
 			"namespace1": {
 				store: map[string]*v1.ServiceAccount{
 					"default": {
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: meta.ObjectMeta{
 							Name: "default",
 						},
 					},
@@ -326,7 +315,7 @@ func newFakeKubeClient() k8sutil.KubeInterface {
 			"namespace2": {
 				store: map[string]*v1.ServiceAccount{
 					"default": {
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: meta.ObjectMeta{
 							Name: "default",
 						},
 					},
@@ -335,7 +324,7 @@ func newFakeKubeClient() k8sutil.KubeInterface {
 			"kube-system": {
 				store: map[string]*v1.ServiceAccount{
 					"default": {
-						ObjectMeta: v1.ObjectMeta{
+						ObjectMeta: meta.ObjectMeta{
 							Name: "default",
 						},
 					},
@@ -378,7 +367,7 @@ func newFakeFailingACRClient() *fakeFailingACRClient {
 }
 
 func process(t *testing.T, c *controller) {
-	namespaces, _ := c.k8sutil.Kclient.Namespaces().List(v1.ListOptions{})
+	namespaces, _ := c.k8sutil.Kclient.CoreV1().Namespaces().List(context.Background(), meta.ListOptions{})
 	for _, ns := range namespaces.Items {
 		err := handler(c, &ns)
 		assert.Nil(t, err)
@@ -529,7 +518,7 @@ func TestProcessWithExistingSecrets(t *testing.T) {
 	c := newFakeController()
 
 	secretGCR := &v1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name: *argGCRSecretName,
 		},
 		Data: map[string][]byte{
@@ -539,7 +528,7 @@ func TestProcessWithExistingSecrets(t *testing.T) {
 	}
 
 	secretAWS := &v1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name: *argAWSSecretName,
 		},
 		Data: map[string][]byte{
@@ -549,7 +538,7 @@ func TestProcessWithExistingSecrets(t *testing.T) {
 	}
 
 	secretDPR := &v1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name: *argDPRSecretName,
 		},
 		Data: map[string][]byte{
@@ -559,7 +548,7 @@ func TestProcessWithExistingSecrets(t *testing.T) {
 	}
 
 	secretACR := &v1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name: *argACRSecretName,
 		},
 		Data: map[string][]byte{
