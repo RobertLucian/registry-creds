@@ -35,7 +35,7 @@ The following parameters are driven via Environment variables.
 
 1. Clone the repo and navigate to directory
 
-2. Configure
+1. Configure
 
    1. If running on AWS EC2, make sure your EC2 instances have the following IAM permissions:
 
@@ -55,7 +55,7 @@ The following parameters are driven via Environment variables.
       }
       ```
 
-   2. If you are not running in AWS Cloud, then you can still use this tool! Edit & create the sample [secret](k8s/secret.yaml) and update values for `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `aws-account`, and `aws-region` (base64 encoded).
+   1. If you are not running in AWS Cloud, then you can still use this tool! Edit & create the sample [secret](k8s/secret.yaml) and update values for `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `aws-account`, and `aws-region` (base64 encoded).
 
       ```bash
       echo -n "secret-key" | base64
@@ -63,97 +63,79 @@ The following parameters are driven via Environment variables.
       kubectl create -f k8s/secret.yaml
       ```
 
-3. Create the replication controller.
+1. Apply the manifests
 
    ```bash
-   kubectl create -f k8s/replicationController.yaml
+   kubectl apply -f k8s/
    ```
 
    > **NOTE:** If running on premise, no need to provide `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` since that will come from the EC2 instance.
 
-4. Use `awsecr-cred` for name of `imagePullSecrets` on your `deployment.yaml` file.
+1. Use `awsecr-cred` for name of `imagePullSecrets` on your `deployment.yaml` file.
 
 ## How to setup running in GCR
 
 1. Clone the repo and navigate to directory
 
-2. Input your `application_default_credentials.json` information into the `secret.yaml` template located [here](k8s/secret.yaml#L17):
+1. Input your `application_default_credentials.json` information into the `secret.yaml` template located [here](k8s/secret.yaml#L17):
 The value for `application_default_credentials.json` can be obtained with the following command:
 
    ```bash
    base64 -w 0 $HOME/.config/gcloud/application_default_credentials.json
    ```
 
-3. Create the secret in kubernetes
+1. Apply the manifests
 
    ```bash
-   kubectl create -f k8s/secret.yml
-   ```
-
-4. Create the replication controller:
-
-   ```bash
-   kubectl create -f k8s/replicationController.yaml
+   kubectl apply -f k8s/
    ```
 
 ## How to setup running in Docker Private Registry
 
 1. Clone the repo and navigate to directory
 
-2. Edit the sample [secret](k8s/secret.yaml) and update values for `DOCKER_PRIVATE_REGISTRY_SERVER`, `DOCKER_PRIVATE_REGISTRY_USER`, and `DOCKER_PRIVATE_REGISTRY_PASSWORD` (base64 encoded).
+1. Edit the sample [secret](k8s/secret.yaml) and update values for `DOCKER_PRIVATE_REGISTRY_SERVER`, `DOCKER_PRIVATE_REGISTRY_USER`, and `DOCKER_PRIVATE_REGISTRY_PASSWORD` (base64 encoded).
 
    ```bash
    echo -n "secret-key" | base64
    ```
 
-3. Create the secret in kubernetes
+1. Apply the manifests
 
    ```bash
-   kubectl create -f k8s/secret.yml
-   ```
-
-4. Create the replication controller:
-
-   ```bash
-   kubectl create -f k8s/replicationController.yaml
+   kubectl apply -f k8s/
    ```
 
 ## How to set up Azure Container Registry
 
 1. [Create a service principal](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-service-principal) that your Kubernetes cluster will use to access the registry.
 
-2. Clone the repo and navigate to the repo root
+1. Clone the repo and navigate to the repo root
 
-3. Edit the sample [secret](k8s/secret.yaml) and update values for `ACR_URL`, `ACR_CLIENT_ID`, and `ACR_PASSWORD` (base64 encoded). Use service principal application ID as the client ID, and service principal password (client secret) as the password.
+1. Edit the sample [secret](k8s/secret.yaml) and update values for `ACR_URL`, `ACR_CLIENT_ID`, and `ACR_PASSWORD` (base64 encoded). Use service principal application ID as the client ID, and service principal password (client secret) as the password.
 
    ```bash
    echo -n "secret-key" | base64
    ```
 
-3. Create the secret in kubernetes
+1. Apply the manifests
 
    ```bash
-   kubectl create -f k8s/secret.yml
+   kubectl apply -f k8s/
    ```
 
-4. Create the replication controller:
+## Quay Image
 
-   ```bash
-   kubectl create -f k8s/replicationController.yaml
-   ```
-
-## DockerHub Image
-
-- [upmcenterprises/registry-creds](https://hub.docker.com/r/upmcenterprises/registry-creds/)
+- [quay.io/robertlucian/registry-creds](https://quay.io/robertlucian/registry-creds)
 
 ## Developing Locally
 
 If you want to hack on this project:
 
 1. Clone the repo
-2. Build: `make build`
-3. Test: `make test`
-4. Run on your machine: `go run ./main.go --kubecfg-file=<pathToKubecfgFile>`
+1. Build: `make build`
+1. Test: `make test`
+1. Run on your machine: `go run ./main.go --kubecfg-file=<pathToKubecfgFile>`
 
 ## About
 
